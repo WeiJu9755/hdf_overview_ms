@@ -67,6 +67,44 @@ function owner_contractor($auto_seq,$check,$memberID){
 	
 }
 
+$xajax->registerFunction("returnValue");
+function returnValue($auto_seq){
+	$objResponse = new xajaxResponse();
+	$earliest_entry_date = "";
+	$latest_completion_date = "";
+
+	$mDB = "";
+	$mDB = new MywebDB();
+	
+	$Qry="SELECT 
+			a.auto_seq,
+			MIN(b.actual_entry_date) AS earliest_entry_date,
+			MAX(b.actual_completion_date) AS latest_completion_date
+		FROM CaseManagement a
+		LEFT JOIN overview_building b 
+			ON b.case_id = a.case_id
+		WHERE a.auto_seq = '$auto_seq'
+		GROUP BY a.auto_seq;";
+	$mDB->query($Qry);
+	if ($mDB->rowCount() > 0) {
+		while ($row=$mDB->fetchRow(2)) {
+			$earliest_entry_date = $row['earliest_entry_date'];
+			$latest_completion_date = $row['latest_completion_date'];
+			
+
+		}
+	}
+	
+	$mDB->remove();
+	
+	$objResponse->assign("earliest_entry_date".$auto_seq,"innerHTML",$earliest_entry_date);
+	$objResponse->assign("latest_completion_date".$auto_seq,"innerHTML",$latest_completion_date);	
+	
+	
+    return $objResponse;
+	
+}
+
 $xajax->processRequest();
 
 
@@ -294,6 +332,9 @@ $list_view=<<<EOT
 				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">工程名稱</th>
 				<th class="text-center text-nowrap" style="width:10%;padding: 10px;background-color: #CBF3FC;">工地地址</th>
 				<th class="text-center text-nowrap" style="width:14%;padding: 10px;background-color: #CBF3FC;">工地google定位網址</th>
+				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">實際進場日</th>
+				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">實際完工日</th>
+
 				<th class="text-center text-nowrap" style="width:4%;padding: 10px;background-color: #CBF3FC;">工地狀態</th>
 				<th class="text-center text-nowrap" style="width:6%;padding: 10px;background-color: #CBF3FC;">工程概況</th>
 				<th class="text-center text-nowrap" style="width:8%;padding: 10px;background-color: #CBF3FC;">最後修改</th>
@@ -456,6 +497,34 @@ $list_view
 					google_location = '<span class="size08"><a href="'+aData[21]+'" target="_blank"><span class="blue02">'+aData[21]+'</span></a></span>';
 
 				$('td:eq(9)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_google_location_btn+google_location+'</div>' );
+				
+				// 實際進場日期和實際完工日期
+				var earliest_entry_date = '<div id="earliest_entry_date'+aData[14]+'"></div>';
+				var latest_completion_date = '<div id="latest_completion_date'+aData[14]+'"></div>';
+				xajax_returnValue(aData[14]);
+
+				// 實際進場日
+				var show_earliest_entry_date = "";
+				if (aData[14] != null && aData[14] != "")
+					show_earliest_entry_date = '<span class="size12 text-nowrap">'+earliest_entry_date+'</span>';
+
+				$('td:eq(10)', nRow).html(
+					'<div class="d-flex justify-content-center align-items-center text-center text-nowrap" style="height:32px;">'
+					+ show_earliest_entry_date +
+					'</div>'
+				);
+
+				// 實際完工日
+				var show_latest_completion_date = "";
+				if (aData[14] != null && aData[14] != "")
+					show_latest_completion_date = '<span class="size12 text-nowrap">'+latest_completion_date+'</span>';
+
+				$('td:eq(11)', nRow).html(
+					'<div class="d-flex justify-content-center align-items-center text-center text-nowrap" style="height:32px;">'
+					+ show_latest_completion_date +
+					'</div>'
+				);
+
 
 				//工地狀態
 				var site_status_url = "openfancybox_edit('/index.php?ch=site_status&auto_seq="+aData[14]+"&fm=$fm',400,250,'');";
@@ -465,7 +534,7 @@ $list_view
 				if (aData[22] != null && aData[22] != "")
 					site_status = '<span class="size12 text-nowrap">'+aData[22]+'</span>';
 
-				$('td:eq(10)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_site_status_btn+site_status+'</div>' );
+				$('td:eq(12)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_site_status_btn+site_status+'</div>' );
 
 
 				var url1 = "openfancybox_edit('/index.php?ch=edit&auto_seq="+aData[14]+"&fm=$fm',1800,'96%','');";
@@ -474,7 +543,7 @@ $list_view
 					show_btn = '<button type="button" class="btn btn-light btn-sm text-nowrap" onclick="'+url1+'" title="工程概況"><i class="bi bi-building"></i>&nbsp;工程概況</button>';
 
 
-				$('td:eq(11)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
+				$('td:eq(13)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
 
 				/*
 				var url1 = "openfancybox_edit('/index.php?ch=edit&auto_seq="+aData[14]+"&fm=$fm',800,'96%','');";
@@ -492,7 +561,7 @@ $list_view
 						+'</div>';
 				}
 
-				$('td:eq(12)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
+				$('td:eq(14)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
 				*/
 
 				//最後修改
@@ -505,7 +574,7 @@ $list_view
 				if (aData[17] != null && aData[17] != "")
 					member_name = '<div class="text-nowrap">'+aData[17]+'</div>';
 
-				$('td:eq(12)', nRow).html( '<div class="text-center" style="height:auto;min-height:32px;">'+last_modify+member_name+'</div>' );
+				$('td:eq(14)', nRow).html( '<div class="text-center" style="height:auto;min-height:32px;">'+last_modify+member_name+'</div>' );
 
 
 				return nRow;
