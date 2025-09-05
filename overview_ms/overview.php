@@ -88,8 +88,9 @@ function returnValue($auto_seq){
 	$mDB->query($Qry);
 	if ($mDB->rowCount() > 0) {
 		while ($row=$mDB->fetchRow(2)) {
-			$earliest_entry_date = $row['earliest_entry_date'];
-			$latest_completion_date = $row['latest_completion_date'];
+			$earliest_entry_date = (!empty($row['earliest_entry_date']) && $row['earliest_entry_date'] != "0000-00-00") ? $row['earliest_entry_date'] : " - ";
+			$latest_completion_date = (!empty($row['latest_completion_date']) && $row['latest_completion_date'] != "0000-00-00") ? $row['latest_completion_date'] : " - ";
+
 			
 
 		}
