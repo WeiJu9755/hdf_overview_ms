@@ -36,6 +36,7 @@ function owner_builder($auto_seq,$check,$memberID){
 			owner_builder = '$check' 
 			,makeby8	= '$memberID'
 			,last_modify8 = now()
+			,update_count8 = update_count8 + 1
 			where auto_seq = '$auto_seq'";
 	$mDB->query($Qry);
 	$mDB->remove();
@@ -57,6 +58,7 @@ function owner_contractor($auto_seq,$check,$memberID){
 			owner_contractor = '$check' 
 			,makeby8	= '$memberID'
 			,last_modify8 = now()
+			,update_count8 = update_count8 + 1
 			where auto_seq = '$auto_seq'";
 	$mDB->query($Qry);
 	$mDB->remove();
@@ -335,7 +337,6 @@ $list_view=<<<EOT
 				<th class="text-center text-nowrap" style="width:14%;padding: 10px;background-color: #CBF3FC;">工地google定位網址</th>
 				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">實際進場日</th>
 				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">實際完工日</th>
-
 				<th class="text-center text-nowrap" style="width:4%;padding: 10px;background-color: #CBF3FC;">工地狀態</th>
 				<th class="text-center text-nowrap" style="width:6%;padding: 10px;background-color: #CBF3FC;">工程概況</th>
 				<th class="text-center text-nowrap" style="width:8%;padding: 10px;background-color: #CBF3FC;">最後修改</th>
@@ -565,19 +566,42 @@ $list_view
 				$('td:eq(14)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
 				*/
 
-				//最後修改
-				var last_modify = "";
-				if (aData[9] != null && aData[9] != "")
-					last_modify = '<div class="text-nowrap">'+moment(aData[9]).format('YYYY-MM-DD HH:mm')+'</div>';
+				//最後修改 
+				var last_modify = (aData[9] != null && aData[9] != "") 
+				? '<div class="text-nowrap">' + moment(aData[9]).format('YYYY-MM-DD HH:mm') + '</div>' 
+				: "";
+
 				
 				//編輯人員
-				var member_name = "";
-				if (aData[17] != null && aData[17] != "")
-					member_name = '<div class="text-nowrap">'+aData[17]+'</div>';
+				var member_name = (aData[17] != null && aData[17] != "") 
+					? '<span class="text-nowrap">' + aData[17] + '</span>' 
+					: "";
 
-				$('td:eq(14)', nRow).html( '<div class="text-center" style="height:auto;min-height:32px;">'+last_modify+member_name+'</div>' );
+				//更新次數
+				var update_count_val = (aData[23] != null && aData[23] != "") ? aData[23] : "0";
 
+				if ((last_modify == null || last_modify == "") && (member_name == null || member_name == "")) {
+				
+				$('td:eq(14)', nRow).html('<div style="height:auto;min-height:32px;"></div>');
 
+				} else {
+
+				//累計修改次數
+				var update_count_html = ' <span class="badge rounded-1 bg-secondary opacity-75" ' +
+										'style="cursor:help; font-size:10px; padding: 2px 4px; margin-left: 4px;" ' +
+										'data-bs-toggle="tooltip" ' + 
+										'data-bs-html="true" ' + // 允許 tooltip 內含 HTML
+										'title="累計修改次數：' + update_count_val + '次">' + 
+										update_count_val + '</span>';
+
+				$('td:eq(14)', nRow).html( 
+					'<div class="text-center" style="height:auto;min-height:32px;">' + 
+						last_modify + 
+						'<div>' + member_name + update_count_html + '</div>' + 
+					'</div>' 
+				);
+
+					}
 				return nRow;
 			
 			}

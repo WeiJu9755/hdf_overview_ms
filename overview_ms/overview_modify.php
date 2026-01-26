@@ -39,6 +39,7 @@ function DeleteRow($auto_seq,$case_id,$memberID){
 	$Qry="UPDATE CaseManagement set
 		last_modify8 = now()
 		,makeby8	= '$memberID'
+		,update_count8 = update_count8 + 1
 		WHERE case_id = '$case_id'";
 	$mDB->query($Qry);
 
