@@ -53,6 +53,38 @@ function DeleteRow($auto_seq,$case_id,$memberID){
 	
 }
 
+$xajax->registerFunction("case_contact_DeleteRow");
+function case_contact_DeleteRow($auto_seq,$case_id,$memberID){
+
+	$objResponse = new xajaxResponse();
+	
+	$mDB = "";
+	$mDB = new MywebDB();
+
+	//刪除主資料
+	$Qry="delete from case_contacts where auto_seq = '$auto_seq'";
+	$mDB->query($Qry);
+
+	//更新主檔
+	$Qry="UPDATE CaseManagement set
+		last_modify8 = now()
+		,makeby8	= '$memberID'
+		,update_count8 = update_count8 + 1
+		WHERE case_id = '$case_id'";
+	$mDB->query($Qry);
+
+	
+	$mDB->remove();
+	
+    $objResponse->script("oTable = $('#builder_info_table').dataTable();oTable.fnDraw(false)");
+	$objResponse->script("oTable = $('#contractor_info_table').dataTable();oTable.fnDraw(false)");
+	$objResponse->script("oTable = $('#architect_office_info_table').dataTable();oTable.fnDraw(false)");
+	$objResponse->script("autoclose('提示', '資料已刪除！', 500);");
+
+	return $objResponse;
+	
+}
+
 
 $xajax->registerFunction("returnValue");
 function returnValue($auto_seq,$builder_id,$scaffold,$rebar,$hydropower,$layout,$concrete,$concrete_plant,$masonry,$painting,$drywall,$responsible,$maincontractor_pricing_staff,$subcontractor_pricing_staff){
@@ -211,7 +243,9 @@ $mess_title = $title;
 
 $mDB = "";
 $mDB = new MywebDB();
-$Qry="SELECT a.* FROM CaseManagement a
+$Qry="SELECT a.*,b.builder_name,c.contractor_name FROM CaseManagement a
+LEFT JOIN builder b ON b.builder_id = a.builder_id
+LEFT JOIN contractor c ON c.contractor_id = a.contractor_id
 WHERE a.auto_seq = '$auto_seq'";
 $mDB->query($Qry);
 $total = $mDB->rowCount();
@@ -222,7 +256,10 @@ if ($total > 0) {
 	$region = $row['region'];
 	$construction_id = $row['construction_id'];
 	$builder_id = $row['builder_id'];
+	$builder_name = $row['builder_name'];
+	$architect_office = $row['architect_office'];
 	$contractor_id = $row['contractor_id'];
+	$contractor_name = $row['contractor_name'];
 	$county = $row['county'];
 	$town = $row['town'];
 	$zipcode = $row['zipcode'];
@@ -424,6 +461,9 @@ EOT;
 
 $m_location		= "/website/smarty/templates/".$site_db."/".$templates;
 include $m_location."/sub_modal/project/func06/overview_ms/overview_sub.php";
+include $m_location."/sub_modal/project/func06/overview_ms/builder_info.php";
+include $m_location."/sub_modal/project/func06/overview_ms/contractor_info.php";
+include $m_location."/sub_modal/project/func06/overview_ms/architect_office_info.php";
 
 
 
@@ -472,6 +512,75 @@ $style_css
 					</div>
 					$show_overview_sub
 				</div>
+			</div>
+		</div>
+		<div id="info_container">
+			<div class="w-100 mb-5">
+				<div class="field_container3">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-lg-3 col-sm-12 col-md-12">
+								<div class="field_div1a">建設公司:</div> 
+								<div class="field_div2a">
+									<div class="inline weight blue02 pt-2 me-2">$builder_name</div>
+									 <button type="button"
+											class="btn btn-danger px-4"
+											onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=builder&organization_id=$builder_id&organization_name=$builder_name&fm=$fm',600,'50%','');">
+											<i class="bi bi-plus-circle"></i>&nbsp;新增資料
+										</button>
+								</div> 
+							</div> 
+						</div>
+					</div>
+					$show_builder_info
+				</div>
+				<div class="field_container3">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-lg-3 col-sm-12 col-md-12">
+								<div class="field_div1a">營造公司:</div> 
+								<div class="field_div2a">
+									<div class="inline weight blue02 pt-2 me-2">$contractor_name</div>
+									 <button type="button"
+											class="btn btn-danger px-4"
+											onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=contractor&organization_id=$contractor_id&organization_name=$contractor_name&fm=$fm',600,'50%','');">
+											<i class="bi bi-plus-circle"></i>&nbsp;新增資料
+										</button>
+								</div>
+								
+							</div> 
+						</div>
+					</div>
+					$show_contractor_info
+				</div>
+				<div class="field_container3">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-lg-3 col-sm-12 col-md-12">
+								<div class="field_div1a">建築師事務所:</div> 
+								<div class="field_div2a">
+									<div class="inline weight blue02 pt-2 me-2">$architect_office</div>
+								</div> 
+							</div> 
+							<div class="col-lg-3 col-sm-12 col-md-12">
+								<button type="button"
+											class="btn btn-warning px-4"
+											onclick="openfancybox_edit('/index.php?ch=architect_office_edit&auto_seq=&case_id=$case_id&fm=$fm',600,'50%','');">
+											<i class="bi bi-plus-circle"></i>&nbsp;編輯公司
+										</button>
+									 <button type="button"
+											class="btn btn-danger px-4"
+											onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=architect_office&organization_id=$architect_office&organization_name=$contractor_name&fm=$fm',600,'50%','');">
+											<i class="bi bi-plus-circle"></i>&nbsp;新增資料
+										</button>
+								</div>
+							</div> 
+						</div>
+						
+					</div>
+					$show_architect_office_info
+				</div>
+				
 			</div>
 		</div>
 	</div>

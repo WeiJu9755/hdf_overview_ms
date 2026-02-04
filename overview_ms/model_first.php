@@ -237,6 +237,22 @@ switch($ch) {
 		$smarty->assign('show_center',$show_center);
 		$smarty->assign('xajax_javascript', $xajax->getJavascript('/xajax/'));
 		break;
+	case 'case_contacts_edit':
+		$title = "編輯聯絡資料";
+		$sid = "view01";
+		$modal = $m_location."/sub_modal/project/func06/overview_ms/case_contacts_modify.php";
+		include $modal;
+		$smarty->assign('show_center',$show_center);
+		$smarty->assign('xajax_javascript', $xajax->getJavascript('/xajax/'));
+		break;
+	case 'architect_office_edit':
+		$title = "編輯建築師事務所";
+		$sid = "view01";
+		$modal = $m_location."/sub_modal/project/func06/overview_ms/architect_office_modify.php";
+		include $modal;
+		$smarty->assign('show_center',$show_center);
+		$smarty->assign('xajax_javascript', $xajax->getJavascript('/xajax/'));
+		break;
 	case 'ch_employee':
 	case 'ch_employee2':
 		$title = "員工名單";

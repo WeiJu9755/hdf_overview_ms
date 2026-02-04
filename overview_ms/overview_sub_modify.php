@@ -55,7 +55,7 @@ function processform($aFormValues){
 	
 	$objResponse->script("setSave();");
 	$objResponse->script("parent.overview_sub_myDraw();");
-
+	$objResponse->script("parent.builder_info_myDraw();");
 	$objResponse->script("parent.$.fancybox.close();");
 		
 	
