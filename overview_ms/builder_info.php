@@ -26,22 +26,22 @@ $Cancel = getlang("取消");
 
 
 $list_view=<<<EOT
-<div class="w-100 px-3 py-2">
-	<table class="table table-bordered border-dark w-100" id="builder_info_table" style="min-width:1720px;">
-		<thead class="table-light border-dark">
-			<tr style="border-bottom: 1px solid #000;">
-				<th scope="col" class="text-center text-nowrap vmiddle" style="width:10%;">聯絡人</th>
-				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">連絡電話</th>
-				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">備註</th>
-				<th scope="col" class="text-center text-nowrap vmiddle" style="width:4%;">處理</th>
-			</tr>
-		</thead>
-		<tbody class="table-group-divider">
-			<tr>
-				<td colspan="21" class="dataTables_empty">資料載入中...</td>
-			</tr>
-		</tbody>
-	</table>
+<div class="w-100">
+    <table class="table table-sm table-bordered border-dark w-100" id="builder_info_table">
+        <thead class="table-light border-dark">
+            <tr>
+                <th scope="col" class="text-center text-nowrap vmiddle" style="width:30%;">聯絡人</th>
+                <th scope="col" class="text-center text-nowrap vmiddle" style="width:35%;">連絡電話</th>
+                <th scope="col" class="text-center text-nowrap vmiddle" style="width:20%;">備註</th>
+                <th scope="col" class="text-center text-nowrap vmiddle" style="width:15%;">處理</th>
+            </tr>
+        </thead>
+        <tbody class="table-group-divider">
+            <tr>
+                <td colspan="4" class="dataTables_empty">載入中...</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 EOT;
 
@@ -55,9 +55,25 @@ if (!($detect->isMobile() && !$detect->isTablet())) {
 
 $show_builder_info=<<<EOT
 <style>
+/* 強制修正表格在窄空間的縮放 */
 #builder_info_table {
-	width: 100% !Important;
-	margin: 5px 0 0 0 !Important;
+    width: 100% !important;
+    margin: 5px 0 0 0 !important;
+    font-size: 0.85rem; /* 稍微縮小字體以適應窄空間 */
+}
+#builder_info_table td {
+    padding: 4px 2px !important;
+    vertical-align: middle;
+}
+.btn-group-xs > .btn, .btn-xs {
+    padding: 1px 5px;
+    font-size: 12px;
+}
+.remark-wrap {
+    white-space: normal !important;      /* 允許換行 */
+    word-break: break-word;              /* 英文/數字過長時斷行 */
+    overflow-wrap: anywhere;             /* 超長字串強制斷 */
+    line-height: 1.4;
 }
 </style>
 
@@ -66,26 +82,19 @@ $list_view
 <script>
 	var oTable;
 	$(document).ready(function() {
-		$('#builder_info_table').dataTable( {
-			"processing": false,
-			"serverSide": true,
-			"responsive":  {
-				details: true
-			},//RWD響應式
-			"scrollX": '$scroll',
-			"paging": false,
-			"searching": false,  //禁用原生搜索
-			"ordering": false,
+        var oTable = $('#builder_info_table').dataTable({
+            "processing": false,
+            "serverSide": true,
+            "autoWidth": false, // 關閉自動寬度，交由 CSS 控制
+            "responsive": true,
+            "scrollX": false,   // 在並排模式下，關閉橫向捲動
+            "paging": false,
+            "searching": false,
+            "ordering": false,
 			"ajaxSource": "/smarty/templates/$site_db/$templates/sub_modal/project/func06/overview_ms/server_case_contacts.php?site_db=$site_db&case_id=$case_id&organization_id=$builder_id&organization_type=builder",
 			"info": false,
-			"language": {
-						"sUrl": "$dataTable_de"
-					},
-			"fixedHeader": true,
-			"fixedColumns": {
-        		left: 1,
-    		},
-			"fnRowCallback": function( nRow, aData, iDisplayIndex ) { 
+            "language": { "sUrl": "$dataTable_de" },
+            "fnRowCallback": function( nRow, aData, iDisplayIndex ) {
 
 				//聯絡人
 				var contact_name = "";
@@ -105,7 +114,7 @@ $list_view
 				if (aData[6] != null && aData[6] != "")
 					remark = aData[6];
 
-				$('td:eq(2)', nRow).html( '<div class="d-flex justify-content-center align-items-center size12 text-center" style="height:auto;min-height:32px;">'+remark+'</div>' );
+				$('td:eq(2)', nRow).html( '<div class="size12 text-start remark-wrap">' + remark + '</div>' );
 
 				
 

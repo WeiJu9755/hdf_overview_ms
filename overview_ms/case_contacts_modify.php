@@ -40,6 +40,7 @@ function processform($aFormValues){
 
 	$objResponse->script("parent.builder_info_myDraw();");
 	$objResponse->script("parent.contractor_info_myDraw();");
+	$objResponse->script("parent.architect_office_info_myDraw();");
 	$objResponse->script("parent.$.fancybox.close();");
 		
 	

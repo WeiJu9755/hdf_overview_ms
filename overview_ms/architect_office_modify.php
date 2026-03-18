@@ -70,12 +70,13 @@ function SaveValue($aFormValues){
 		$mDB = "";
 		$mDB = new MywebDB();
 
-		$Qry="UPDATE CaseManagement set
-			last_modify8 = now()
-			,architect_office = $architect_office
-			,makeby8	= '$memberID'
-			,update_count8 = update_count8 + 1
-			WHERE case_id = '$case_id'";
+		$Qry = "UPDATE CaseManagement SET
+				last_modify8 = NOW(),
+				architect_office = '$architect_office',
+				makeby8 = '$memberID',
+				update_count8 = update_count8 + 1
+			WHERE case_id = '$case_id'
+		";
 		$mDB->query($Qry);
 
 

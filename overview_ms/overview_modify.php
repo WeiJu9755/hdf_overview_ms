@@ -451,6 +451,11 @@ $style_css=<<<EOT
     max-width: 220px;
 }
 
+.weight.blue02 {
+    font-size: 18px;
+    line-height: 1.4;
+	word-break: break-all;
+}
 
 </style>
 EOT;
@@ -483,104 +488,108 @@ $style_css
 		</div>
 	</div>
 	<div id="full" class="card-body p-1" data-overlayscrollbars-initialize>
-		<div id="info_container">
-			<div class="w-100 mb-5">
-				<div class="field_container3">
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col-lg-3 col-sm-12 col-md-12">
-								<div class="field_div1a">案件編號:</div> 
-								<div class="field_div2a">
-									<div class="inline weight blue02 pt-2 me-2">$case_id</div>
-								</div> 
-							</div> 
-							<div class="col-lg-9 col-sm-12 col-md-12">
-								<div class="field_div1a">工程名稱:</div> 
-								<div class="field_div2a blue02 pt-3">
-									$construction_id
-								</div> 
-								$member_logo
-							</div> 
+		<div id="info_container" class="w-100 mb-4">
+			<div class="field_container3">
+				<div class="container-fluid">
+					<div class="row">
+						<div class="col-lg-3 col-md-6">
+							<div class="field_div1a">案件編號:</div>
+							<div class="field_div2a">
+								<div class="inline weight blue02 pt-2 me-2">$case_id</div>
+							</div>
+						</div>
+						<div class="col-lg-9 col-md-6">
+							<div class="field_div1a">工程名稱:</div>
+							<div class="field_div2a blue02 pt-3">$construction_id</div>
+							$member_logo
 						</div>
 					</div>
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col-lg-7 col-sm-12 col-md-12">
-								$show_fellow_btn
-							</div> 
-						</div>
+					<div class="row">
+						<div class="col-12">$show_fellow_btn $show_overview_sub</div>
 					</div>
-					$show_overview_sub
 				</div>
 			</div>
 		</div>
-		<div id="info_container">
-			<div class="w-100 mb-5">
-				<div class="field_container3">
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col-lg-3 col-sm-12 col-md-12">
-								<div class="field_div1a">建設公司:</div> 
-								<div class="field_div2a">
-									<div class="inline weight blue02 pt-2 me-2">$builder_name</div>
-									 <button type="button"
-											class="btn btn-danger px-4"
+
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-4 col-md-12 mb-3">
+					<div class="field_container3 h-100 border p-2">
+					<div class="field_div1a">建設公司:</div>
+						<div class="field_div2a mb-2">
+							<div class="field_div2a mb-2">
+								<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+									<div class="weight blue02">
+										$builder_name
+									</div>
+
+									<button type="button"
+											class="btn btn-danger btn-sm px-3"
 											onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=builder&organization_id=$builder_id&organization_name=$builder_name&fm=$fm',600,'50%','');">
-											<i class="bi bi-plus-circle"></i>&nbsp;新增資料
-										</button>
-								</div> 
-							</div> 
-						</div>
-					</div>
-					$show_builder_info
-				</div>
-				<div class="field_container3">
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col-lg-3 col-sm-12 col-md-12">
-								<div class="field_div1a">營造公司:</div> 
-								<div class="field_div2a">
-									<div class="inline weight blue02 pt-2 me-2">$contractor_name</div>
-									 <button type="button"
-											class="btn btn-danger px-4"
-											onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=contractor&organization_id=$contractor_id&organization_name=$contractor_name&fm=$fm',600,'50%','');">
-											<i class="bi bi-plus-circle"></i>&nbsp;新增資料
-										</button>
+										<i class="bi bi-plus-circle"></i> 新增資料
+									</button>
 								</div>
-								
-							</div> 
+							</div>
 						</div>
+						<hr>
+						$show_builder_info
 					</div>
-					$show_contractor_info
 				</div>
-				<div class="field_container3">
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col-lg-3 col-sm-12 col-md-12">
-								<div class="field_div1a">建築師事務所:</div> 
-								<div class="field_div2a">
-									<div class="inline weight blue02 pt-2 me-2">$architect_office</div>
-								</div> 
-							</div> 
-							<div class="col-lg-3 col-sm-12 col-md-12">
-								<button type="button"
-											class="btn btn-warning px-4"
-											onclick="openfancybox_edit('/index.php?ch=architect_office_edit&auto_seq=&case_id=$case_id&fm=$fm',600,'50%','');">
-											<i class="bi bi-plus-circle"></i>&nbsp;編輯公司
+
+				<div class="col-lg-4 col-md-12 mb-3">
+					<div class="field_container3 h-100 border p-2">		
+						<div class="field_div1a">營造公司:</div>
+							<div class="field_div2a mb-2">
+								<div class="field_div2a mb-2">
+									<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+										<div class="weight blue02">
+											$contractor_name
+										</div>
+
+										<button type="button"
+												class="btn btn-danger btn-sm px-3"
+												onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=contractor&organization_id=$contractor_id&organization_name=$contractor_name&fm=$fm',600,'50%','');">
+											<i class="bi bi-plus-circle"></i> 新增資料
 										</button>
-									 <button type="button"
-											class="btn btn-danger px-4"
-											onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=architect_office&organization_id=$architect_office&organization_name=$contractor_name&fm=$fm',600,'50%','');">
-											<i class="bi bi-plus-circle"></i>&nbsp;新增資料
-										</button>
+									</div>
 								</div>
-							</div> 
-						</div>
-						
+							</div>
+						<hr>
+						$show_contractor_info
 					</div>
-					$show_architect_office_info
 				</div>
-				
+
+				<div class="col-lg-4 col-md-12 mb-3">
+					<div class="field_container3 h-100 border p-2">
+					<div class="field_div1a">建築師事務所:</div>
+						<div class="field_div2a mb-2">
+
+								<div class="field_div2a mb-2">
+									<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+										<div class="weight blue02">
+											$architect_office
+										</div>
+
+										<div class="d-flex gap-1">
+											<button type="button"
+													class="btn btn-warning btn-sm px-2"
+													onclick="openfancybox_edit('/index.php?ch=architect_office_edit&auto_seq=&case_id=$case_id&fm=$fm',600,'50%','');">
+												<i class="bi bi-pencil-square"></i> 編輯
+											</button>
+
+											<button type="button"
+													class="btn btn-danger btn-sm px-2"
+													onclick="openfancybox_edit('/index.php?ch=case_contacts_edit&auto_seq=&case_id=$case_id&organization_type=architect_office&organization_id=$architect_office&organization_name=$architect_office&fm=$fm',600,'50%','');">
+												<i class="bi bi-plus-circle"></i> 新增
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						<hr>
+						$show_architect_office_info
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
