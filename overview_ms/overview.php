@@ -325,26 +325,29 @@ $list_view=<<<EOT
 	<table class="table table-bordered border-dark w-100" id="db_table" style="min-width:1200px;">
 		<thead class="table-light border-dark">
 			<tr style="border-bottom: 1px solid #000;">
-				<th class="text-center text-nowrap" style="width:5%;padding: 10px;background-color: #CBF3FC;">案件編號</th>
-				<th class="text-center text-nowrap" style="width:3%;padding: 10px;background-color: #CBF3FC;">區域</th>
-				<th class="text-center text-nowrap" style="width:5%;padding: 10px;background-color: #CBF3FC;">案件種類</th>
-				<th class="text-center text-nowrap" style="width:10%;padding: 10px;background-color: #CBF3FC;">建商單位</th>
-				<th class="text-center text-nowrap" style="width:2%;padding: 10px;background-color: #CBF3FC;">業主</th>
-				<th class="text-center text-nowrap" style="width:10%;padding: 10px;background-color: #CBF3FC;">營造商單位</th>
-				<th class="text-center text-nowrap" style="width:2%;padding: 10px;background-color: #CBF3FC;">業主</th>
-				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">工程名稱</th>
-				<th class="text-center text-nowrap" style="width:10%;padding: 10px;background-color: #CBF3FC;">工地地址</th>
-				<th class="text-center text-nowrap" style="width:14%;padding: 10px;background-color: #CBF3FC;">工地google定位網址</th>
-				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">實際進場日</th>
-				<th class="text-center text-nowrap" style="width:12%;padding: 10px;background-color: #CBF3FC;">實際完工日</th>
-				<th class="text-center text-nowrap" style="width:4%;padding: 10px;background-color: #CBF3FC;">工地狀態</th>
-				<th class="text-center text-nowrap" style="width:6%;padding: 10px;background-color: #CBF3FC;">工程概況</th>
-				<th class="text-center text-nowrap" style="width:8%;padding: 10px;background-color: #CBF3FC;">最後修改</th>
+				<th class="text-center text-nowrap vmiddle" style="width:5%;padding: 10px;background-color: #CBF3FC;">案件編號</th>
+				<th class="text-center text-nowrap vmiddle" style="width:3%;padding: 10px;background-color: #CBF3FC;">區域</th>
+				<th class="text-center text-nowrap vmiddle" style="width:5%;padding: 10px;background-color: #CBF3FC;">案件種類</th>
+				<th class="text-center text-nowrap vmiddle th-stack" style="width:8%;background-color: #CBF3FC;"><div>建商單位</div><div>營造商單位</div></th>
+				<th class="text-center text-nowrap vmiddle th-stack" style="width:2%;background-color: #CBF3FC;"><div>業主</div><div>業主</div></th>
+				<th class="text-center text-nowrap vmiddle" style="width:8%;padding: 10px;background-color: #CBF3FC;">工程名稱</th>
+				<th class="text-center text-nowrap vmiddle" style="width:5%;padding: 10px;background-color: #CBF3FC;">承攬模式</th>
+				<th class="text-center text-nowrap vmiddle" style="width:5%;padding: 10px;background-color: #CBF3FC;">所屬公司</th>
+				<th class="text-center text-nowrap vmiddle" style="width:5%;padding: 10px;background-color: #CBF3FC;">經辦人員</th>
+				<th class="text-center text-nowrap vmiddle" style="width:7%;padding: 10px;background-color: #CBF3FC;">合約承攬建物棟數</th>
+				<th class="text-center text-nowrap vmiddle th-stack" style="width:5%;background-color: #CBF3FC;"><div>志特編號</div><div>合約號碼</div></th>
+				<th class="text-center text-nowrap vmiddle" style="width:8%;padding: 10px;background-color: #CBF3FC;">工地地址</th>
+				<th class="text-center text-nowrap vmiddle" style="width:8%;padding: 10px;background-color: #CBF3FC;">工地google定位網址</th>
+				<th class="text-center text-nowrap vmiddle th-stack" style="width:5%;background-color: #CBF3FC;"><div>預計進場日</div><div>預計完工日</div></th>
+				<th class="text-center text-nowrap vmiddle th-stack" style="width:5%;background-color: #CBF3FC;"><div>實際進場日</div><div>實際完工日</div></th>
+				<th class="text-center text-nowrap vmiddle" style="width:4%;padding: 10px;background-color: #CBF3FC;">工地狀態</th>
+				<th class="text-center text-nowrap vmiddle" style="width:5%;padding: 10px;background-color: #CBF3FC;">工程概況</th>
+				<th class="text-center text-nowrap vmiddle" style="width:7%;padding: 10px;background-color: #CBF3FC;">最後修改</th>
 			</tr>
 		</thead>
 		<tbody class="table-group-divider">
 			<tr>
-				<td colspan="13" class="dataTables_empty">資料載入中...</td>
+				<td colspan="18" class="dataTables_empty">資料載入中...</td>
 			</tr>
 		</tbody>
 	</table>
@@ -365,6 +368,30 @@ $show_view=<<<EOT
 #db_table {
 	width: 100% !Important;
 	margin: 5px 0 0 0 !Important;
+}
+
+/* 表頭上下兩段 */
+#db_table th.th-stack {
+	padding: 0 !important;
+}
+#db_table th.th-stack > div {
+	padding: 6px 10px;
+}
+#db_table th.th-stack > div + div {
+	border-top: 1px solid #000;
+}
+
+/* 內容上下兩段 */
+#db_table td.td-stack {
+	padding: 0 !important;
+	vertical-align: middle;
+}
+#db_table .cell-stack > div {
+	min-height: 32px;
+	padding: 4px 8px;
+}
+#db_table .cell-stack > div + div {
+	border-top: 1px solid #dee2e6;
 }
 
 </style>
@@ -399,6 +426,18 @@ $list_view
     		},
 			"fnRowCallback": function( nRow, aData, iDisplayIndex ) { 
 
+				//上下兩段顯示
+				var stack2 = function(top, bottom) {
+					return '<div class="cell-stack">'
+						+ '<div class="d-flex justify-content-center align-items-center text-center">'+top+'</div>'
+						+ '<div class="d-flex justify-content-center align-items-center text-center">'+bottom+'</div>'
+						+ '</div>';
+				};
+
+				var isEmpty = function(v) {
+					return (v == null || v == "" || v == "0000-00-00");
+				};
+
 				//案件編號
 				var case_id = "";
 				if (aData[3] != null && aData[3] != "")
@@ -423,7 +462,7 @@ $list_view
 
 				$('td:eq(2)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_case_type_btn+case_type+'</div>' );
 
-				//建商單位
+				//建商單位 / 營造商單位
 				var builder_name = "";
 				if (aData[15] != null && aData[15] != "")
 					builder_name = '<span class="size12 me-1 text-nowrap">'+aData[15]+'</span>';
@@ -432,18 +471,6 @@ $list_view
 				if (aData[5] != null && aData[5] != "")
 					builder_id = '<span class="size09">'+aData[5]+'</span>';
 
-				$('td:eq(3)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+builder_name+builder_id+'</div>' );
-
-				if ( aData[19] == "Y" ) {
-					var mcheck1 = "xajax_owner_builder("+aData[14]+",'N','$memberID');";
-					var img_check1 = '<a href="javascript:void(0);" onclick="'+mcheck1+'"><i class="bi bi-check-circle size16 green weight"></i></a>';
-				} else {
-					var mcheck1 = "xajax_owner_builder("+aData[14]+",'Y','$memberID');";
-					var img_check1 = '<a href="javascript:void(0);" onclick="'+mcheck1+'"><i class="bi bi-circle size16 gray"></i></a>';
-				}
-				$('td:eq(4)', nRow).html( '<div class="text-center">'+img_check1+'</div>' );
-
-				//營造商單位
 				var contractor_name = "";
 				if (aData[16] != null && aData[16] != "")
 					contractor_name = '<span class="size12 me-1 text-nowrap">'+aData[16]+'</span>';
@@ -452,7 +479,16 @@ $list_view
 				if (aData[6] != null && aData[6] != "")
 					contractor_id = '<span class="size09">'+aData[6]+'</span>';
 
-				$('td:eq(5)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+contractor_name+contractor_id+'</div>' );
+				$('td:eq(3)', nRow).addClass('td-stack').html( stack2(builder_name+builder_id, contractor_name+contractor_id) );
+
+				//業主(建商) / 業主(營造商)
+				if ( aData[19] == "Y" ) {
+					var mcheck1 = "xajax_owner_builder("+aData[14]+",'N','$memberID');";
+					var img_check1 = '<a href="javascript:void(0);" onclick="'+mcheck1+'"><i class="bi bi-check-circle size16 green weight"></i></a>';
+				} else {
+					var mcheck1 = "xajax_owner_builder("+aData[14]+",'Y','$memberID');";
+					var img_check1 = '<a href="javascript:void(0);" onclick="'+mcheck1+'"><i class="bi bi-circle size16 gray"></i></a>';
+				}
 
 				if ( aData[20] == "Y" ) {
 					var mcheck2 = "xajax_owner_contractor("+aData[14]+",'N','$memberID');";
@@ -461,14 +497,66 @@ $list_view
 					var mcheck2 = "xajax_owner_contractor("+aData[14]+",'Y','$memberID');";
 					var img_check2 = '<a href="javascript:void(0);" onclick="'+mcheck2+'"><i class="bi bi-circle size16 gray"></i></a>';
 				}
-				$('td:eq(6)', nRow).html( '<div class="text-center">'+img_check2+'</div>' );
+
+				$('td:eq(4)', nRow).addClass('td-stack').html( stack2(img_check1, img_check2) );
 
 				//工程名稱
 				var construction_id = "";
 				if (aData[4] != null && aData[4] != "")
 					construction_id = aData[4];
 
-				$('td:eq(7)', nRow).html( '<div class="d-flex justify-content-center align-items-center size12 text-center" style="height:auto;min-height:32px;">'+construction_id+'</div>' );
+				$('td:eq(5)', nRow).html( '<div class="d-flex justify-content-center align-items-center size12 text-center" style="height:auto;min-height:32px;">'+construction_id+'</div>' );
+
+				//承攬模式
+				var ContractingModel = "";
+				if (aData[24] != null && aData[24] != "")
+					ContractingModel = aData[24];
+
+				$('td:eq(6)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center size12 text-nowrap" style="height:auto;min-height:32px;">'+ContractingModel+'</div>' );
+
+				//所屬公司
+				var company_name = "";
+				if (aData[27] != null && aData[27] != "")
+					company_name = aData[27];
+				else if (aData[26] != null && aData[26] != "")
+					company_name = aData[26];
+				if (company_name != "")
+					company_name = '<span class="size12 weight me-1 text-nowrap">'+company_name+'</span>';
+
+				var company_id = "";
+				if (aData[25] != null && aData[25] != "")
+					company_id = '<span class="size09">'+aData[25]+'</span>';
+
+				$('td:eq(7)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+company_name+company_id+'</div>' );
+
+				//經辦人員
+				var Handler_name = "";
+				if (aData[29] != null && aData[29] != "")
+					Handler_name = '<span class="size12 weight me-1 text-nowrap">'+aData[29]+'</span>';
+
+				var Handler = "";
+				if (aData[28] != null && aData[28] != "")
+					Handler = '<span class="size09">'+aData[28]+'</span>';
+
+				$('td:eq(8)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+Handler_name+Handler+'</div>' );
+
+				//合約承攬建物棟數
+				var buildings_contract = isEmpty(aData[30]) ? "" : aData[30];
+				var buildings_contract2 = isEmpty(aData[31]) ? "" : aData[31];
+				var std_layer_floor = isEmpty(aData[32]) ? "" : aData[32];
+				var roof_protrusion_floor = isEmpty(aData[33]) ? "" : aData[33];
+
+				var show_buildings = "";
+				if (buildings_contract != "" || buildings_contract2 != "" || std_layer_floor != "" || roof_protrusion_floor != "")
+					show_buildings = buildings_contract2 + ' / ' + std_layer_floor + '；' + roof_protrusion_floor + '、' + buildings_contract;
+
+				$('td:eq(9)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center size12 text-nowrap" style="height:auto;min-height:32px;">'+show_buildings+'</div>' );
+
+				//志特編號 / 合約號碼
+				var geto_no = isEmpty(aData[34]) ? "" : '<span class="size12 text-nowrap">'+aData[34]+'</span>';
+				var ERP_no = isEmpty(aData[35]) ? "" : '<span class="size12 text-nowrap">'+aData[35]+'</span>';
+
+				$('td:eq(10)', nRow).addClass('td-stack').html( stack2(geto_no, ERP_no) );
 
 				//工地地址
 				var zipcode = '';
@@ -487,8 +575,7 @@ $list_view
 				if (aData[13] != null && aData[13] != '')
 					address = aData[13];
 
-
-				$('td:eq(8)', nRow).html( '<div class="d-flex justify-content-start align-items-center" style="height:auto;min-height:32px;"><div class="text-nowrap"><span class="size12 weight text-nowrap vbottom">'+county+town+'</span></div><div>'+address+'</div></div>' );
+				$('td:eq(11)', nRow).html( '<div class="d-flex justify-content-start align-items-center" style="height:auto;min-height:32px;"><div class="text-nowrap"><span class="size12 weight text-nowrap vbottom">'+county+town+'</span></div><div>'+address+'</div></div>' );
 
 				//工地google定位網址
 				var google_location_url = "openfancybox_edit('/index.php?ch=google_location&auto_seq="+aData[14]+"&fm=$fm',800,250,'');";
@@ -498,35 +585,24 @@ $list_view
 				if (aData[21] != null && aData[21] != "")
 					google_location = '<span class="size08"><a href="'+aData[21]+'" target="_blank"><span class="blue02">'+aData[21]+'</span></a></span>';
 
-				$('td:eq(9)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_google_location_btn+google_location+'</div>' );
-				
-				// 實際進場日期和實際完工日期
-				var earliest_entry_date = '<div id="earliest_entry_date'+aData[14]+'"></div>';
-				var latest_completion_date = '<div id="latest_completion_date'+aData[14]+'"></div>';
+				$('td:eq(12)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_google_location_btn+google_location+'</div>' );
+
+				//預計進場日 / 預計完工日
+				var estimated_arrival_date = isEmpty(aData[36]) ? "" : '<span class="size12 text-nowrap">'+aData[36]+'</span>';
+				var completion_date = isEmpty(aData[37]) ? "" : '<span class="size12 text-nowrap">'+aData[37]+'</span>';
+
+				$('td:eq(13)', nRow).addClass('td-stack').html( stack2(estimated_arrival_date, completion_date) );
+
+				//實際進場日 / 實際完工日 (由 overview_building 取最早進場、最晚完工)
+				var earliest_entry_date = "";
+				var latest_completion_date = "";
+				if (aData[14] != null && aData[14] != "") {
+					earliest_entry_date = '<span class="size12 text-nowrap" id="earliest_entry_date'+aData[14]+'"></span>';
+					latest_completion_date = '<span class="size12 text-nowrap" id="latest_completion_date'+aData[14]+'"></span>';
+				}
+
+				$('td:eq(14)', nRow).addClass('td-stack').html( stack2(earliest_entry_date, latest_completion_date) );
 				xajax_returnValue(aData[14]);
-
-				// 實際進場日
-				var show_earliest_entry_date = "";
-				if (aData[14] != null && aData[14] != "")
-					show_earliest_entry_date = '<span class="size12 text-nowrap">'+earliest_entry_date+'</span>';
-
-				$('td:eq(10)', nRow).html(
-					'<div class="d-flex justify-content-center align-items-center text-center text-nowrap" style="height:32px;">'
-					+ show_earliest_entry_date +
-					'</div>'
-				);
-
-				// 實際完工日
-				var show_latest_completion_date = "";
-				if (aData[14] != null && aData[14] != "")
-					show_latest_completion_date = '<span class="size12 text-nowrap">'+latest_completion_date+'</span>';
-
-				$('td:eq(11)', nRow).html(
-					'<div class="d-flex justify-content-center align-items-center text-center text-nowrap" style="height:32px;">'
-					+ show_latest_completion_date +
-					'</div>'
-				);
-
 
 				//工地狀態
 				var site_status_url = "openfancybox_edit('/index.php?ch=site_status&auto_seq="+aData[14]+"&fm=$fm',400,250,'');";
@@ -536,42 +612,20 @@ $list_view
 				if (aData[22] != null && aData[22] != "")
 					site_status = '<span class="size12 text-nowrap">'+aData[22]+'</span>';
 
-				$('td:eq(12)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_site_status_btn+site_status+'</div>' );
+				$('td:eq(15)', nRow).html( '<div class="text-start text-nowrap" style="height:auto;min-height:32px;">'+show_site_status_btn+site_status+'</div>' );
 
-
+				//工程概況
 				var url1 = "openfancybox_edit('/index.php?ch=edit&auto_seq="+aData[14]+"&fm=$fm',1800,'96%','');";
 
-				var show_btn = '';
-					show_btn = '<button type="button" class="btn btn-light btn-sm text-nowrap" onclick="'+url1+'" title="工程概況"><i class="bi bi-building"></i>&nbsp;工程概況</button>';
+				var show_btn = '<button type="button" class="btn btn-light btn-sm text-nowrap" onclick="'+url1+'" title="工程概況"><i class="bi bi-building"></i>&nbsp;工程概況</button>';
 
-
-				$('td:eq(13)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
-
-				/*
-				var url1 = "openfancybox_edit('/index.php?ch=edit&auto_seq="+aData[14]+"&fm=$fm',800,'96%','');";
-				var mdel = "myDel("+aData[14]+");";
-
-				var show_btn = '';
-				if (('$powerkey'=="A") || ('$super_admin'=="Y")) {
-					show_btn = '<div class="btn-group text-nowrap">'
-						+'<button type="button" class="btn btn-light" onclick="'+url1+'" title="修改"><i class="bi bi-pencil-square"></i></button>'
-						+'<button type="button" class="btn btn-light" onclick="'+mdel+'" title="刪除"><i class="bi bi-trash"></i></button>'
-						+'</div>';
-				} else {
-					show_btn = '<div class="btn-group text-nowrap">'
-						+'<button type="button" class="btn btn-light" onclick="'+url1+'" title="修改"><i class="bi bi-pencil-square"></i></button>'
-						+'</div>';
-				}
-
-				$('td:eq(14)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
-				*/
+				$('td:eq(16)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+show_btn+'</div>' );
 
 				//最後修改 
 				var last_modify = (aData[9] != null && aData[9] != "") 
 				? '<div class="text-nowrap">' + moment(aData[9]).format('YYYY-MM-DD HH:mm') + '</div>' 
 				: "";
 
-				
 				//編輯人員
 				var member_name = (aData[17] != null && aData[17] != "") 
 					? '<span class="text-nowrap">' + aData[17] + '</span>' 
@@ -582,26 +636,26 @@ $list_view
 
 				if ((last_modify == null || last_modify == "") && (member_name == null || member_name == "")) {
 				
-				$('td:eq(14)', nRow).html('<div style="height:auto;min-height:32px;"></div>');
+					$('td:eq(17)', nRow).html('<div style="height:auto;min-height:32px;"></div>');
 
 				} else {
 
-				//累計修改次數
-				var update_count_html = ' <span class="badge rounded-1 bg-secondary opacity-75" ' +
-										'style="cursor:help; font-size:10px; padding: 2px 4px; margin-left: 4px;" ' +
-										'data-bs-toggle="tooltip" ' + 
-										'data-bs-html="true" ' + // 允許 tooltip 內含 HTML
-										'title="累計修改次數：' + update_count_val + '次">' + 
-										update_count_val + '</span>';
+					//累計修改次數
+					var update_count_html = ' <span class="badge rounded-1 bg-secondary opacity-75" ' +
+											'style="cursor:help; font-size:10px; padding: 2px 4px; margin-left: 4px;" ' +
+											'data-bs-toggle="tooltip" ' + 
+											'data-bs-html="true" ' +
+											'title="累計修改次數：' + update_count_val + '次">' + 
+											update_count_val + '</span>';
 
-				$('td:eq(14)', nRow).html( 
-					'<div class="text-center" style="height:auto;min-height:32px;">' + 
-						last_modify + 
-						'<div>' + member_name + update_count_html + '</div>' + 
-					'</div>' 
-				);
+					$('td:eq(17)', nRow).html( 
+						'<div class="text-center" style="height:auto;min-height:32px;">' + 
+							last_modify + 
+							'<div>' + member_name + update_count_html + '</div>' + 
+						'</div>' 
+					);
 
-					}
+				}
 				return nRow;
 			
 			}

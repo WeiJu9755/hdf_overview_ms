@@ -34,7 +34,10 @@
 
 	$aColumns = array( 'a.status1','a.status2','a.region','a.case_id','a.construction_id','a.builder_id','a.contractor_id','a.contact','a.makeby8','a.last_modify8','a.zipcode'
 		,'a.county','a.town','a.address','a.auto_seq','c.builder_name','d.contractor_name','f.member_name','a.case_type','a.owner_builder','a.owner_contractor'
-		,'a.location_URL','a.site_status','a.update_count8');
+		,'a.location_URL','a.site_status','a.update_count8'
+		,'a.ContractingModel','a.company_id','g.company_name','g.short_name','a.Handler','e.employee_name'
+		,'a.buildings_contract','a.buildings_contract2','a.std_layer_floor','a.roof_protrusion_floor','a.geto_no','a.ERP_no'
+		,'a.estimated_arrival_date','a.completion_date');
 			
 	/* Indexed column (used for fast and accurate table cardinality) */
 	$sIndexColumn = "auto_seq";
@@ -232,7 +235,9 @@
 		FROM   $sTable a
 		LEFT JOIN builder c ON c.builder_id = a.builder_id
 		LEFT JOIN contractor d ON d.contractor_id = a.contractor_id
+		LEFT JOIN employee e ON e.employee_id = a.Handler
 		LEFT JOIN memberinfo.member f on f.member_no = a.makeby8
+		LEFT JOIN company g ON g.company_id = a.company_id
 		$sWhere
 		$sOrder
 		$sLimit
@@ -290,6 +295,7 @@
 				$field = str_replace("d.","",$field);
 				$field = str_replace("e.","",$field);
 				$field = str_replace("f.","",$field);
+				$field = str_replace("g.","",$field);
 				
 				$row[] = $aRow[ $field ];
 				
