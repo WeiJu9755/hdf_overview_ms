@@ -230,7 +230,7 @@ switch($ch) {
 		$smarty->assign('xajax_javascript', $xajax->getJavascript('/xajax/'));
 		break;
 	case 'overview_sub_edit':
-		$title = "編輯工程概況";
+		$title = "編輯下包單位";
 		$sid = "view01";
 		$modal = $m_location."/sub_modal/project/func06/overview_ms/overview_sub_modify.php";
 		include $modal;

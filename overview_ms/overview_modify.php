@@ -31,6 +31,32 @@ function DeleteRow($auto_seq,$case_id,$memberID){
 	$mDB = "";
 	$mDB = new MywebDB();
 
+	$auto_seq = addslashes($auto_seq);
+	$case_id = addslashes($case_id);
+	$memberID = addslashes($memberID);
+
+	//已有棟別或人力資料的下包單位不可刪除
+	$mDB->query("SELECT
+		(SELECT COUNT(*) FROM overview_building WHERE seq = '$auto_seq') AS building_cnt,
+		(SELECT COUNT(*) FROM overview_manpower_sub WHERE seq = '$auto_seq') AS manpower_cnt");
+	$cnt = $mDB->fetchRow(2);
+	if ((int)$cnt['building_cnt'] > 0 || (int)$cnt['manpower_cnt'] > 0) {
+		$mDB->remove();
+		$objResponse->script("jAlert('警示', '此下包單位已有棟別或人力資料，不可刪除', 'red', '', 2500);");
+		return $objResponse;
+	}
+
+	//仍在下包商資料中的下包單位，刪除後「加入下包資料」會再建立
+	$mDB->query("SELECT s.builder_id FROM overview_sub s
+		INNER JOIN CaseManagement c ON c.case_id = s.case_id
+		WHERE s.auto_seq = '$auto_seq' AND s.builder_id <> ''
+		AND s.builder_id IN (c.subcontractor_id1, c.subcontractor_id2, c.subcontractor_id3, c.subcontractor_id4, c.subcontractor_id9, c.subcontractor_id10)");
+	if ($mDB->rowCount() > 0) {
+		$mDB->remove();
+		$objResponse->script("jAlert('警示', '此下包單位仍在下包商資料中，請先至下包商資料移除', 'red', '', 2500);");
+		return $objResponse;
+	}
+
 	//刪除主資料
 	$Qry="delete from overview_sub where auto_seq = '$auto_seq'";
 	$mDB->query($Qry);
@@ -323,7 +349,6 @@ if (!($detect->isMobile() && !$detect->isTablet())) {
 $show_fellow_btn=<<<EOT
 <div class="btn-group ms-5" role="group">
 	<button type="button" class="btn btn-primary mb-1 px-4" onclick="openfancybox_edit('/index.php?ch=ch_subcontractordata&case_id=$case_id&fm=$fm',800,'96%','');"><i class="bi bi-plus-circle"></i>&nbsp;加入下包資料</button>
-	<button type="button" class="btn btn-danger mb-1 px-4" onclick="openfancybox_edit('/index.php?ch=overview_sub_edit&case_id=$case_id&fm=$fm',1200,'96%','');"><i class="bi bi-plus-circle"></i>&nbsp;新增工程概況</button>
 	<button type="button" class="btn btn-success text-nowrap mb-1 px-4" onclick="overview_sub_myDraw();"><i class="bi bi-arrow-repeat"></i>&nbsp;重整</button>
 </div>
 EOT; 

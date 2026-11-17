@@ -32,10 +32,9 @@ function processform($aFormValues){
 	$workers				= trim($aFormValues['workers']);
 	
 	
-	if (trim($aFormValues['engineering_overview']) == "")	{
-		$objResponse->script("jAlert('警示', '請輸入工程概況', 'red', '', 2000);");
+	if (trim($aFormValues['auto_seq']) == "")	{
+		$objResponse->script("jAlert('警示', '請由「加入下包資料」建立下包單位', 'red', '', 2000);");
 		return $objResponse;
-		exit;
 	}
 
 	/*
@@ -98,10 +97,9 @@ function SaveValue($aFormValues){
 		$mDB = "";
 		$mDB = new MywebDB();
 
+		//施作樓層備註（engineering_overview）與下包單位（builder_id）由「加入下包資料」帶入，這裡不更新
 		$Qry="UPDATE overview_sub set
-				 engineering_overview = '$engineering_overview'
-				,builder_id			= '$builder_id'
-				,workers			= '$workers'
+				 workers			= '$workers'
 				,aluminum_formwork_host = '$aluminum_formwork_host'
 				,rebar_host			= '$rebar_host'
 				,hydropower_host	= '$hydropower_host'
@@ -150,30 +148,14 @@ $mDB = "";
 $mDB = new MywebDB();
 
 
-if (!isset($_GET['auto_seq'])) {
-	//若無$_GET['auto_seq']，則自動新增一筆
-	$Qry="INSERT INTO overview_sub (case_id,makeby,last_modify) VALUES ('$case_id','$memberID',now())";
-	$mDB->query($Qry);
-	//再取出 auto_seq
-	$Qry="SELECT auto_seq FROM overview_sub WHERE case_id = '$case_id' ORDER BY auto_seq DESC LIMIT 0,1";
-	$mDB->query($Qry);
-	if ($mDB->rowCount() > 0) {
-		//已找到符合資料
-		$row=$mDB->fetchRow(2);
-		$auto_seq = $row['auto_seq'];
-	}
-	
-	//更新主檔
-	$Qry="UPDATE CaseManagement set
-		last_modify8 = now()
-		,makeby8	= '$memberID'
-		,update_count8 = update_count8 + 1
-		WHERE case_id = '$case_id'";
-	$mDB->query($Qry);
-
-
+if (!isset($_GET['auto_seq']) || trim($_GET['auto_seq']) === '') {
+	//棟別整合改版：不再提供空白新增，下包單位一律由「加入下包資料」建立
+	$mDB->remove();
+	$show_center = '<div class="container mt-5"><div class="alert alert-warning size14">下包單位請由「加入下包資料」建立。</div>'
+		.'<button type="button" class="btn btn-danger" onclick="parent.$.fancybox.close();"><i class="bi bi-power"></i>&nbsp;關閉</button></div>';
+	return;
 } else {
-	$auto_seq = $_GET['auto_seq'];
+	$auto_seq = addslashes($_GET['auto_seq']);
 }
 
 
@@ -244,8 +226,12 @@ if ($mDB->rowCount() > 0) {
 		$ch_builder_id = $row['subcontractor_id'];
 		$ch_builder_name = $row['subcontractor_name'];
 		$select_builder .= "<option value=\"$ch_builder_id\" ".mySelect($ch_builder_id,$builder_id).">$ch_builder_id $ch_builder_name</option>";
+		if ($ch_builder_id == $builder_id)
+			$builder_display = "$ch_builder_id $ch_builder_name";
 	}
 }
+if (empty($builder_display))
+	$builder_display = $builder_id;
 
 //載入下包商-鷹架
 $Qry="select subcontractor_id,subcontractor_name from subcontractor order by auto_seq";
@@ -487,22 +473,21 @@ $style_css
 					<div class="container-fluid">
 						<div class="row">
 							<div class="col-lg-12 col-sm-12 col-md-12">
-								<div class="field_div1">工程概況:</div> 
+								<div class="field_div1">施作樓層備註:</div>
 								<div class="inline mt-2" style="width:100%;max-width:900px;">
-									<input type="text" class="inputtext" id="engineering_overview" name="engineering_overview" size="50" maxlength="120" style="width:100%;max-width:872px;" value="$engineering_overview" onchange="setEdit();"/>
-								</div> 
+									<div class="inline size14 weight blue02 mt-2">$engineering_overview</div>
+									<div class="size08 text-secondary">由下包商資料「施作樓層」帶入，請至下包商資料修改</div>
+								</div>
 							</div> 
 						</div>
 					</div>
 					<div class="container-fluid">
 						<div class="row">
 							<div class="col-lg-6 col-sm-12 col-md-12">
-								<div class="field_div1">代工單位:</div> 
+								<div class="field_div1">下包單位:</div>
 								<div class="field_div2">
-									<select id="builder_id" name="builder_id" placeholder="請選擇代工單位" style="width:100%;max-width:350px;">
-										$select_builder
-									</select>
-								</div> 
+									<div class="inline size14 weight blue02 mt-2">$builder_display</div>
+								</div>
 							</div> 
 							<div class="col-lg-6 col-sm-12 col-md-12">
 								<div class="field_div1">配置工班人數:</div> 
@@ -720,7 +705,7 @@ function setSave() {
 $(document).ready(async function() {
 	//等待其他資源載入完成，此方式適用大部份瀏覽器
 	await new Promise(resolve => setTimeout(resolve, 100));
-	$('#engineering_overview').focus();
+	$('#workers').focus();
 });
 
 </script>

@@ -30,8 +30,8 @@ $list_view=<<<EOT
 	<table class="table table-bordered border-dark w-100" id="overview_sub_table" style="min-width:1720px;">
 		<thead class="table-light border-dark">
 			<tr style="border-bottom: 1px solid #000;">
-				<th scope="col" class="text-center text-nowrap vmiddle" style="width:10%;">工程概況</th>
-				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">代工單位</th>
+				<th scope="col" class="text-center text-nowrap vmiddle" style="width:10%;">下包單位</th>
+				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">負責棟別</th>
 				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">配置<br>工班人數</th>
 				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">鋁模主辦</th>
 				<th scope="col" class="text-center text-nowrap vmiddle" style="width:5%;">鋼筋主辦</th>
@@ -104,15 +104,20 @@ $list_view
     		},
 			"fnRowCallback": function( nRow, aData, iDisplayIndex ) { 
 
-				//工程概況
+				//施作樓層備註（engineering_overview）
 				var engineering_overview = "";
 				if (aData[2] != null && aData[2] != "")
-					engineering_overview = aData[2];
+					engineering_overview = '<div class="size08 text-secondary">施作樓層：'+aData[2]+'</div>';
 
-				$('td:eq(0)', nRow).html( '<div class="d-flex justify-content-center align-items-center size12 text-center" style="height:auto;min-height:32px;">'+engineering_overview+'</div>' );
-
-				//代工單位
+				//下包單位（代工單位）
 				var builder_id = '<div id="builder_id'+aData[0]+'"></div>';
+
+				$('td:eq(0)', nRow).html( '<div class="text-center" style="height:auto;min-height:32px;">'+builder_id+engineering_overview+'</div>' );
+
+				//負責棟別
+				var responsible_buildings = "";
+				if (aData[22] != null && aData[22] != "")
+					responsible_buildings = aData[22];
 				//鷹架
 				var scaffold = '<div id="scaffold'+aData[0]+'"></div>';
 				//鋼筋
@@ -142,7 +147,7 @@ $list_view
 
 				xajax_returnValue(aData[0],aData[3],aData[10],aData[11],aData[12],aData[13],aData[14],aData[15],aData[16],aData[17],aData[18],aData[19],aData[20],aData[21]);
 
-				$('td:eq(1)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center" style="height:auto;min-height:32px;">'+builder_id+'</div>' );
+				$('td:eq(1)', nRow).html( '<div class="d-flex justify-content-center align-items-center text-center size12" style="height:auto;min-height:32px;">'+responsible_buildings+'</div>' );
 
 				//配置工班人數	
 				var workers = "";
@@ -218,7 +223,7 @@ $list_view
 
 				var show_btn = '';
 					show_btn = '<div class="btn-group text-nowrap">'
-						+'<button type="button" class="btn btn-light" onclick="'+url1+'" title="編輯工程概況"><i class="bi bi-pencil-square"></i></button>'
+						+'<button type="button" class="btn btn-light" onclick="'+url1+'" title="編輯下包單位"><i class="bi bi-pencil-square"></i></button>'
 						+'<button type="button" class="btn btn-light" onclick="'+mdel+'" title="刪除"><i class="bi bi-trash"></i></button>'
 						+'</div>';
 
@@ -240,7 +245,7 @@ var overview_sub_myDel = function(auto_seq,case_id,memberID) {
 
 	Swal.fire({
 	title: "您確定要刪除此筆資料嗎?",
-	text: "此項作業會刪除所有與此筆案件記錄有關的資料",
+	text: "已有棟別或人力資料、或仍在下包商資料中的下包單位不可刪除",
 	icon: "question",
 	showCancelButton: true,
 	confirmButtonColor: "#3085d6",

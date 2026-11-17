@@ -20,120 +20,224 @@ $detect = new Mobile_Detect;
 @include_once '/website/xajax/xajax_core/xajax.inc.php';
 $xajax = new xajax();
 
+
+// 下包商資料中會帶入的下包欄位（5～8 畫面已不顯示，不帶入）
+function overviewSubcontractorSlots() {
+	return array(1, 2, 3, 4, 9, 10);
+}
+
+// 逗號字串轉棟別陣列（去空白、去重複）
+function overviewSplitBuildings($value) {
+	$result = array();
+	foreach (explode(',', (string)$value) as $item) {
+		$item = trim($item);
+		if ($item !== '' && !in_array($item, $result, true)) {
+			$result[] = $item;
+		}
+	}
+	return $result;
+}
+
+function overviewAppendUnique(&$list, $value) {
+	$value = trim((string)$value);
+	if ($value !== '' && !in_array($value, $list, true)) {
+		$list[] = $value;
+	}
+}
+
+/**
+ * 依下包商資料同步案件下包單位（overview_sub）與案件棟別下包（overview_building）。
+ * 規則見《棟別整合改版_修改說明》§3.1。
+ */
+function overviewSyncSubcontractorData($case_id, $memberID) {
+
+	$result = array('ok' => false, 'message' => '', 'added' => 0, 'updated' => 0, 'cancelled' => 0, 'warnings' => array());
+
+	$caseSql = addslashes($case_id);
+	$memberSql = addslashes($memberID);
+
+	$mDB = new MywebDB();
+
+	$mDB->query("SELECT * FROM CaseManagement WHERE case_id = '$caseSql' LIMIT 1");
+	if ($mDB->rowCount() <= 0) {
+		$mDB->remove();
+		$result['message'] = '找不到案件資料';
+		return $result;
+	}
+	$case = $mDB->fetchRow(2);
+
+	$estimatedArrivalSql = addslashes((string)$case['estimated_arrival_date']);
+	$completionSql = addslashes((string)$case['completion_date']);
+
+	// 1) 整理各下包欄位；同一下包商出現在多個欄位時合併為一筆
+	$builders = array();
+	foreach (overviewSubcontractorSlots() as $slot) {
+		$builder = trim((string)$case["subcontractor_id$slot"]);
+		if ($builder === '') {
+			continue;
+		}
+		$floor = trim((string)$case["construction_floor$slot"]);
+		$buildings = overviewSplitBuildings($case["subcontractor_buildings$slot"]);
+
+		if (!isset($builders[$builder])) {
+			$builders[$builder] = array('slot' => $slot, 'floors' => array(), 'buildings' => array());
+		}
+		overviewAppendUnique($builders[$builder]['floors'], $floor);
+
+		if (empty($buildings)) {
+			$result['warnings'][] = "下包代工{$slot} 尚未勾選棟別";
+			continue;
+		}
+		foreach ($buildings as $building) {
+			if (!isset($builders[$builder]['buildings'][$building])) {
+				$builders[$builder]['buildings'][$building] = array();
+			}
+			overviewAppendUnique($builders[$builder]['buildings'][$building], $floor);
+		}
+	}
+
+	$activeKeys = array();
+
+	foreach ($builders as $builder => $info) {
+		$builderSql = addslashes($builder);
+		$overview = implode('、', $info['floors']);
+		$overviewSql = addslashes($overview);
+		$slot = (int)$info['slot'];
+
+		// 2) 案件下包單位：upsert overview_sub (case_id, builder_id)
+		$seq = '';
+		$mDB->query("SELECT auto_seq, engineering_overview, source_slot FROM overview_sub
+			WHERE case_id = '$caseSql' AND builder_id = '$builderSql'
+			ORDER BY auto_seq LIMIT 1");
+		if ($mDB->rowCount() > 0) {
+			$row = $mDB->fetchRow(2);
+			$seq = $row['auto_seq'];
+			if ((string)$row['engineering_overview'] !== $overview || (string)$row['source_slot'] !== (string)$slot) {
+				// 只在實際變更時更新 last_modify，避免 overview_notify 多發通知
+				$mDB->query("UPDATE overview_sub SET
+						engineering_overview = '$overviewSql'
+						,source_slot = '$slot'
+						,makeby = '$memberSql'
+						,last_modify = now()
+					WHERE auto_seq = '$seq'");
+			}
+		} else {
+			$mDB->query("INSERT INTO overview_sub (case_id, builder_id, engineering_overview, source_slot, makeby, last_modify)
+				VALUES ('$caseSql', '$builderSql', '$overviewSql', '$slot', '$memberSql', now())");
+			$mDB->query("SELECT auto_seq FROM overview_sub
+				WHERE case_id = '$caseSql' AND builder_id = '$builderSql'
+				ORDER BY auto_seq DESC LIMIT 1");
+			if ($mDB->rowCount() > 0) {
+				$row = $mDB->fetchRow(2);
+				$seq = $row['auto_seq'];
+			}
+		}
+
+		if ($seq === '') {
+			$result['warnings'][] = "下包單位 {$builder} 建立失敗";
+			continue;
+		}
+
+		// 3) 案件棟別下包：每一棟 upsert overview_building (case_id, building, builder_id)
+		foreach ($info['buildings'] as $building => $floors) {
+			$activeKeys[$building."\t".$builder] = true;
+			$buildingSql = addslashes($building);
+			$floorText = implode('、', $floors);
+			$floorSql = addslashes($floorText);
+
+			$mDB->query("SELECT auto_seq, seq, construction_floor, sync_status FROM overview_building
+				WHERE case_id = '$caseSql' AND building = '$buildingSql' AND builder_id = '$builderSql'
+				ORDER BY auto_seq LIMIT 1");
+			if ($mDB->rowCount() > 0) {
+				$row = $mDB->fetchRow(2);
+				if ((string)$row['seq'] !== (string)$seq || (string)$row['construction_floor'] !== $floorText || $row['sync_status'] !== '正常') {
+					// 不動進場日、天數等已編輯資料
+					$mDB->query("UPDATE overview_building SET
+							seq = '$seq'
+							,construction_floor = '$floorSql'
+							,sync_status = '正常'
+							,makeby = '$memberSql'
+							,last_modify = now()
+						WHERE auto_seq = '{$row['auto_seq']}'");
+					$result['updated']++;
+				}
+			} else {
+				$mDB->query("INSERT INTO overview_building (case_id, seq, builder_id, building, construction_floor, sync_status
+						,scheduled_entry_date, scheduled_completion_date, construction_days_first_floor, construction_days_per_floor, makeby, last_modify)
+					VALUES ('$caseSql', '$seq', '$builderSql', '$buildingSql', '$floorSql', '正常'
+						,'$estimatedArrivalSql', '$completionSql', '30', '18', '$memberSql', now())");
+				$result['added']++;
+			}
+		}
+	}
+
+	// 4) 取消勾選：只標示，不刪除
+	$cancelSeqs = array();
+	$mDB->query("SELECT auto_seq, building, builder_id FROM overview_building
+		WHERE case_id = '$caseSql' AND builder_id IS NOT NULL AND builder_id <> '' AND sync_status <> '已取消勾選'");
+	while ($row = $mDB->fetchRow(2)) {
+		if (!isset($activeKeys[$row['building']."\t".$row['builder_id']])) {
+			$cancelSeqs[] = (int)$row['auto_seq'];
+		}
+	}
+	if (!empty($cancelSeqs)) {
+		$mDB->query("UPDATE overview_building SET
+				sync_status = '已取消勾選'
+				,makeby = '$memberSql'
+				,last_modify = now()
+			WHERE auto_seq IN (".implode(',', $cancelSeqs).")");
+		$result['cancelled'] = count($cancelSeqs);
+	}
+
+	// 5) 更新主檔
+	$mDB->query("UPDATE CaseManagement SET
+			last_modify8 = now()
+			,makeby8 = '$memberSql'
+			,update_count8 = update_count8 + 1
+		WHERE case_id = '$caseSql'");
+
+	$mDB->remove();
+
+	$result['ok'] = true;
+	return $result;
+}
+
+
 $xajax->registerFunction("processform");
 function processform($aFormValues){
 
 	$objResponse = new xajaxResponse();
-	
-	$web_id					= trim($aFormValues['web_id']);
-	$auto_seq				= trim($aFormValues['auto_seq']);
-	$memberID				= trim($aFormValues['memberID']);
-	$case_id				= trim($aFormValues['case_id']);
-	$subcontractor_id1		= trim($aFormValues['subcontractor_id1']);
-	$construction_floor1	= trim($aFormValues['construction_floor1']);
-	$total_contract_amt1 	= trim($aFormValues['total_contract_amt1']);
-	$subcontractor_id2		= trim($aFormValues['subcontractor_id2']);
-	$construction_floor2	= trim($aFormValues['construction_floor2']);
-	$total_contract_amt2 	= trim($aFormValues['total_contract_amt2']);
-	$subcontractor_id3		= trim($aFormValues['subcontractor_id3']);
-	$construction_floor3	= trim($aFormValues['construction_floor3']);
-	$total_contract_amt3 	= trim($aFormValues['total_contract_amt3']);
-	$subcontractor_id4		= trim($aFormValues['subcontractor_id4']);
-	$construction_floor4	= trim($aFormValues['construction_floor4']);
-	$total_contract_amt4 	= trim($aFormValues['total_contract_amt4']);
 
-	$confirm1		= trim($aFormValues['confirm1']);
-	$confirm2		= trim($aFormValues['confirm2']);
-	$confirm3		= trim($aFormValues['confirm3']);
-	$confirm4		= trim($aFormValues['confirm4']);
+	$memberID = $_SESSION['memberID'];
+	$case_id = trim($aFormValues['case_id']);
 
-
-	$mDB = "";
-	$mDB = new MywebDB();
-
-	if ($confirm1 == "Y") {
-		//檢查是否存在
-		$Qry="SELECT auto_seq FROM overview_sub
-		WHERE case_id = '$case_id' AND builder_id = '$subcontractor_id1' AND engineering_overview = '$construction_floor1'";
-		$mDB->query($Qry);
-		$total = $mDB->rowCount();
-		if ($total > 0) {
-			//已找到符合資料，不予處理
-		} else {
-			//新增
-			$Qry="INSERT INTO overview_sub (case_id,engineering_overview,builder_id) VALUES
-				('$case_id','$construction_floor1','$subcontractor_id1')";
-			$mDB->query($Qry);
-		}
+	if ($case_id == '') {
+		$objResponse->script("jAlert('警示', '缺少案件編號', 'red', '', 2000);");
+		return $objResponse;
 	}
 
-	if ($confirm2 == "Y") {
-		//檢查是否存在
-		$Qry="SELECT auto_seq FROM overview_sub
-		WHERE case_id = '$case_id' AND builder_id = '$subcontractor_id2' AND engineering_overview = '$construction_floor2'";
-		$mDB->query($Qry);
-		$total = $mDB->rowCount();
-		if ($total > 0) {
-			//已找到符合資料，不予處理
-		} else {
-			//新增
-			$Qry="INSERT INTO overview_sub (case_id,engineering_overview,builder_id) VALUES
-				('$case_id','$construction_floor2','$subcontractor_id2')";
-			$mDB->query($Qry);
-		}
+	$result = overviewSyncSubcontractorData($case_id, $memberID);
+
+	if (!$result['ok']) {
+		$objResponse->script("jAlert('警示', '".addslashes($result['message'])."', 'red', '', 2000);");
+		return $objResponse;
 	}
 
-	if ($confirm3 == "Y") {
-		//檢查是否存在
-		$Qry="SELECT auto_seq FROM overview_sub
-		WHERE case_id = '$case_id' AND builder_id = '$subcontractor_id3' AND engineering_overview = '$construction_floor3'";
-		$mDB->query($Qry);
-		$total = $mDB->rowCount();
-		if ($total > 0) {
-			//已找到符合資料，不予處理
-		} else {
-			//新增
-			$Qry="INSERT INTO overview_sub (case_id,engineering_overview,builder_id) VALUES
-				('$case_id','$construction_floor3','$subcontractor_id3')";
-			$mDB->query($Qry);
+	$html = '<div class="alert alert-success mb-2">已加入！新增 '.$result['added'].' 棟、更新 '.$result['updated'].' 棟、取消勾選 '.$result['cancelled'].' 棟</div>';
+	if (!empty($result['warnings'])) {
+		$html .= '<div class="alert alert-warning mb-2">';
+		foreach ($result['warnings'] as $warning) {
+			$html .= '<div>'.htmlspecialchars($warning, ENT_QUOTES, 'UTF-8').'</div>';
 		}
+		$html .= '</div>';
+	}
+	if ($result['cancelled'] > 0) {
+		$html .= '<div class="alert alert-danger mb-2">取消勾選的棟別不會自動刪除，請至「預計工程人力」確認後手動刪除。</div>';
 	}
 
-	if ($confirm4 == "Y") {
-		//檢查是否存在
-		$Qry="SELECT auto_seq FROM overview_sub
-		WHERE case_id = '$case_id' AND builder_id = '$subcontractor_id4' AND engineering_overview = '$construction_floor4'";
-		$mDB->query($Qry);
-		$total = $mDB->rowCount();
-		if ($total > 0) {
-			//已找到符合資料，不予處理
-		} else {
-			//新增
-			$Qry="INSERT INTO overview_sub (case_id,engineering_overview,builder_id) VALUES
-				('$case_id','$construction_floor4','$subcontractor_id4')";
-			$mDB->query($Qry);
-		}
-	}
-
-
-	$Qry="UPDATE CaseManagement set
-		last_modify8 = now()
-		,makeby8	= '$memberID'
-		,update_count8 = update_count8 + 1
-		WHERE case_id = '$case_id'";
-	$mDB->query($Qry);
-
-
-
-	$mDB->remove();
-
-
+	$objResponse->assign("sync_result", "innerHTML", $html);
 	$objResponse->script("parent.overview_sub_myDraw();");
 
-	$message01 = getlang("已加入!");
-	$objResponse->script("parent.jAlert('Success', '$message01', 'green', '', 1000);");
-	$objResponse->script("parent.$.fancybox.close();");
-		
 	return $objResponse;
 }
 
@@ -142,138 +246,80 @@ $xajax->processRequest();
 
 $fm = $_GET['fm'];
 $case_id = $_GET['case_id'];
+$caseSql = addslashes($case_id);
 
 $mess_title = $title;
-
-//$pro_id = "com";
 
 
 $mDB = "";
 $mDB = new MywebDB();
-/*
-$Qry="SELECT a.*,b.employee_name,c.engineering_name,d.builder_name,e.contractor_name FROM CaseManagement a
-LEFT JOIN employee b ON b.employee_id = a.Handler
-LEFT JOIN construction c ON c.construction_id = a.construction_id
-LEFT JOIN builder d ON d.builder_id = a.builder_id
-LEFT JOIN contractor e ON e.contractor_id = a.contractor_id
-WHERE a.case_id = '$case_id'";
-*/
-$Qry="SELECT a.*
-,b.subcontractor_name as subcontractor_name1
-,c.subcontractor_name as subcontractor_name2 
-,d.subcontractor_name as subcontractor_name3 
-,e.subcontractor_name as subcontractor_name4 
-FROM CaseManagement a
-LEFT JOIN subcontractor b ON b.subcontractor_id = a.subcontractor_id1
-LEFT JOIN subcontractor c ON c.subcontractor_id = a.subcontractor_id2
-LEFT JOIN subcontractor d ON d.subcontractor_id = a.subcontractor_id3
-LEFT JOIN subcontractor e ON e.subcontractor_id = a.subcontractor_id4
-WHERE a.case_id = '$case_id'";
+
+$slots = overviewSubcontractorSlots();
+
+$Qry = "SELECT a.*";
+foreach ($slots as $slot) {
+	$Qry .= ", s$slot.subcontractor_name AS subcontractor_name$slot";
+}
+$Qry .= " FROM CaseManagement a";
+foreach ($slots as $slot) {
+	$Qry .= " LEFT JOIN subcontractor s$slot ON s$slot.subcontractor_id = a.subcontractor_id$slot";
+}
+$Qry .= " WHERE a.case_id = '$caseSql'";
+
 $mDB->query($Qry);
-$total = $mDB->rowCount();
-if ($total > 0) {
-    //已找到符合資料
-	$row=$mDB->fetchRow(2);
-	$status1 = $row['status1'];
-	$status2 = $row['status2'];
+$slot_html = '';
+if ($mDB->rowCount() > 0) {
+	$row = $mDB->fetchRow(2);
 	$region = $row['region'];
 	$case_id = $row['case_id'];
 	$construction_id = $row['construction_id'];
-	/*
-	$engineering_name = $row['engineering_name'];
-	$builder_id = $row['builder_id'];
-	$builder_name = $row['builder_name'];
-	$contractor_id = $row['contractor_id'];
-	$contractor_name = $row['contractor_name'];
-	$contact = $row['contact'];
-	$site_location = $row['site_location'];
-	$county = $row['county'];
-	$town = $row['town'];
-	$zipcode = $row['zipcode'];
-	$address = $row['address'];
-	$ContractingModel = $row['ContractingModel'];
-	$Handler = $row['Handler'];
-	$Handler_name = $row['employee_name'];
-	$buildings = $row['buildings'];
-	$first_review_date = $row['first_review_date'];
-	$estimated_return_date = $row['estimated_return_date'];
-	$preliminary_status = $row['preliminary_status'];
-	$remark = $row['remark'];
 
-	$engineering_qty = $row['engineering_qty'];
-	$std_layer_template_qty = $row['std_layer_template_qty'];
-	$roof_protrusion_template_qty = $row['roof_protrusion_template_qty'];
-	$material_amt = $row['material_amt'];
-	$OEM_cost = $row['OEM_cost'];
-	$quotation_amt = $row['quotation_amt'];
-	$quotation_sended = $row['quotation_sended'];
-	$quotation_date = $row['quotation_date'];
-	$estimated_arrival_date = $row['estimated_arrival_date'];
-	$actual_entry_date = $row['actual_entry_date'];
-	$completion_date = $row['completion_date'];
+	foreach ($slots as $slot) {
+		$e = function($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
+		$sub_id = $e($row["subcontractor_id$slot"]);
+		$sub_name = $e($row["subcontractor_name$slot"]);
+		$floor = $e($row["construction_floor$slot"]);
+		$buildings = $e(implode('、', overviewSplitBuildings($row["subcontractor_buildings$slot"])));
+		$amt = number_format((float)$row["total_contract_amt$slot"]);
 
-	$contract_date = $row['contract_date'];
-	$advance_payment1 = $row['advance_payment1'];
-	$estimated_payment_date1 = $row['estimated_payment_date1'];
-	$request_date1 = $row['request_date1'];
-	$advance_payment2 = $row['advance_payment2'];
-	$estimated_payment_date2 = $row['estimated_payment_date2'];
-	$request_date2 = $row['request_date2'];
-	$advance_payment3 = $row['advance_payment3'];
-	$estimated_payment_date3 = $row['estimated_payment_date3'];
-	$request_date3 = $row['request_date3'];
+		if (trim((string)$row["subcontractor_id$slot"]) === '') {
+			$buildings_html = '<span class="text-secondary">（未填下包商，不帶入）</span>';
+		} elseif ($buildings === '') {
+			$buildings_html = '<span class="red">尚未勾選棟別，不會建立棟別資料</span>';
+		} else {
+			$buildings_html = $buildings;
+		}
 
-	$geto_no = $row['geto_no'];
-	$geto_quotation = $row['geto_quotation'];
-	$geto_order_date = $row['geto_order_date'];
-	$geto_contract_date = $row['geto_contract_date'];
-	$geto_formwork = $row['geto_formwork'];
-	$material_import_date = $row['material_import_date'];
+$slot_html .= <<<EOT
+					<div>
+						<div class="field_div1">下包代工{$slot}:</div>
+						<div class="field_div2">
+							<div class="inline blue weight my-2 me-2">$sub_id</div>
+							<div class="inline blue weight my-2">$sub_name</div>
+						</div>
+					</div>
+					<div>
+						<div class="field_div1">棟別{$slot}:</div>
+						<div class="field_div2">
+							<div class="inline blue weight my-2">$buildings_html</div>
+						</div>
+					</div>
+					<div>
+						<div class="field_div1">施作樓層{$slot}:</div>
+						<div class="field_div2">
+							<div class="inline blue weight my-2">$floor</div>
+						</div>
+					</div>
+					<div>
+						<div class="field_div1">合約總價{$slot}(含稅):</div>
+						<div class="field_div2">
+							<div class="inline blue weight my-2">$amt</div>
+						</div>
+					</div>
+					<hr class="style_b" style="margin: 5px 0 -5px 0;">
 
-
-	$ERP_no = $row['ERP_no'];
-	$buildings_contract = $row['buildings_contract'];
-	$total_contract_amt = $row['total_contract_amt'];
-	*/
-
-	//下包代工1
-	$subcontractor_id1 = $row['subcontractor_id1'];
-	$subcontractor_name1 = $row['subcontractor_name1'];
-	$construction_floor1 = $row['construction_floor1'];
-	$total_contract_amt1 = $row['total_contract_amt1'];
-	$fmt_total_contract_amt1 = number_format($total_contract_amt1);
-
-	$subcontractor_id2 = $row['subcontractor_id2'];
-	$subcontractor_name2 = $row['subcontractor_name2'];
-	$construction_floor2 = $row['construction_floor2'];
-	$total_contract_amt2 = $row['total_contract_amt2'];
-	$fmt_total_contract_amt2 = number_format($total_contract_amt2);
-
-	$subcontractor_id3 = $row['subcontractor_id3'];
-	$subcontractor_name3 = $row['subcontractor_name3'];
-	$construction_floor3 = $row['construction_floor3'];
-	$total_contract_amt3 = $row['total_contract_amt3'];
-	$fmt_total_contract_amt3 = number_format($total_contract_amt3);
-
-	$subcontractor_id4 = $row['subcontractor_id4'];
-	$subcontractor_name4 = $row['subcontractor_name4'];
-	$construction_floor4 = $row['construction_floor4'];
-	$total_contract_amt4 = $row['total_contract_amt4'];
-	$fmt_total_contract_amt4 = number_format($total_contract_amt4);
-
-	if (!empty($subcontractor_id1))
-		$m_confirm1 = "checked=\"checked\"";
-
-	if (!empty($subcontractor_id2))
-		$m_confirm2 = "checked=\"checked\"";
-
-	if (!empty($subcontractor_id3))
-		$m_confirm3 = "checked=\"checked\"";
-
-	if (!empty($subcontractor_id4))
-		$m_confirm4 = "checked=\"checked\"";
-
-
+EOT;
+	}
 }
 
 $mDB->remove();
@@ -288,7 +334,7 @@ EOT;
 
 if (!($detect->isMobile() && !$detect->isTablet())) {
 	$isMobile = 0;
-	
+
 $style_css=<<<EOT
 <style>
 
@@ -388,127 +434,15 @@ $style_css
 							</div>
 						</div>
 					</div>
+					<div class="size12 text-secondary my-2">依下包商資料的下包代工 1、2、3、4、9、10 建立「下包單位」與「棟別 + 下包單位」；取消勾選的棟別只標示，不會刪除。</div>
 					<hr class="style_b" style="margin: 5px 0 -5px 0;">
-					<div>
-						<div class="field_div1">下包代工1:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2 me-2">$subcontractor_id1</div>
-							<div class="inline blue weight my-2">$subcontractor_name1</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">施作樓層1:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$construction_floor1</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">合約總價1(含稅):</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$fmt_total_contract_amt1</div>
-							<div class="inline my-2 float-end">
-								<input type="checkbox" class="inputtext" name="confirm1" id="confirm1" value="Y" $m_confirm1/>
-								<label for="confirm1" class="red">加入到工程概況</label>
-							</div>
-						</div> 
-					</div>
-					<hr class="style_b" style="margin: 5px 0 -5px 0;">
-					<div>
-						<div class="field_div1">下包代工2:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2 me-2">$subcontractor_id2</div>
-							<div class="inline blue weight my-2">$subcontractor_name2</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">施作樓層2:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$construction_floor2</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">合約總價2(含稅):</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$fmt_total_contract_amt2</div>
-							<div class="inline my-2 float-end">
-								<input type="checkbox" class="inputtext" name="confirm2" id="confirm2" value="Y" $m_confirm2/>
-								<label for="confirm2" class="red">加入到工程概況</label>
-							</div>
-						</div> 
-					</div>
-					<hr class="style_b" style="margin: 5px 0 -5px 0;">
-					<div>
-						<div class="field_div1">下包代工3:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2 me-2">$subcontractor_id3</div>
-							<div class="inline blue weight my-2">$subcontractor_name3</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">施作樓層3:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$construction_floor3</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">合約總價3(含稅):</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$fmt_total_contract_amt3</div>
-							<div class="inline my-2 float-end">
-								<input type="checkbox" class="inputtext" name="confirm3" id="confirm3" value="Y" $m_confirm3/>
-								<label for="confirm3" class="red">加入到工程概況</label>
-							</div>
-						</div> 
-					</div>
-					<hr class="style_b" style="margin: 5px 0 -5px 0;">
-					<div>
-						<div class="field_div1">下包代工4:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2 me-2">$subcontractor_id4</div>
-							<div class="inline blue weight my-2">$subcontractor_name4</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">施作樓層4:</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$construction_floor4</div>
-						</div> 
-					</div>
-					<div>
-						<div class="field_div1">合約總價4(含稅):</div> 
-						<div class="field_div2">
-							<div class="inline blue weight my-2">$fmt_total_contract_amt4</div>
-							<div class="inline my-2 float-end">
-								<input type="checkbox" class="inputtext" name="confirm4" id="confirm4" value="Y" $m_confirm4/>
-								<label for="confirm4" class="red">加入到工程概況</label>
-							</div>
-						</div> 
-					</div>
-					<hr class="style_b" style="margin: 5px 0 -5px 0;">
-					<!--
-					<div>
-						<div class="field_div1">設定:</div> 
-						<div class="field_div2 pt-3">
-							<input type="checkbox" class="inputtext" name="confirm7" id="confirm7" value="Y" $m_confirm7 />
-							<label for="confirm7" class="red">確認</label>
-						</div>
-					</div>
-					-->
+$slot_html
+					<div id="sync_result" class="mt-3"></div>
 					<div class="mt-3 text-center">
 						<input type="hidden" name="fm" value="$fm" />
 						<input type="hidden" name="site_db" value="$site_db" />
-						<input type="hidden" name="auto_seq" value="$auto_seq" />
 						<input type="hidden" name="case_id" value="$case_id" />
-						<input type="hidden" name="memberID" value="$memberID" />
-						<input type="hidden" name="subcontractor_id1" value="$subcontractor_id1" />
-						<input type="hidden" name="subcontractor_id2" value="$subcontractor_id2" />
-						<input type="hidden" name="subcontractor_id3" value="$subcontractor_id3" />
-						<input type="hidden" name="subcontractor_id4" value="$subcontractor_id4" />
-						<input type="hidden" name="construction_floor1" value="$construction_floor1" />
-						<input type="hidden" name="construction_floor2" value="$construction_floor2" />
-						<input type="hidden" name="construction_floor3" value="$construction_floor3" />
-						<input type="hidden" name="construction_floor4" value="$construction_floor4" />
-						<button id="close" class="btn btn-danger btn-lg" type="button" onclick="CheckValue(this.form);" style="padding: 5px 15px;"><i class="bi bi-building-add"></i>&nbsp;確定加入</button>
+						<button id="confirm_sync" class="btn btn-danger btn-lg" type="button" onclick="CheckValue(this.form);" style="padding: 5px 15px;"><i class="bi bi-building-add"></i>&nbsp;確定加入</button>
 					</div>
 				</div>
 			</div>
@@ -520,7 +454,6 @@ $style_css
 
 function CheckValue(thisform) {
 	xajax_processform(xajax.getFormValues('modifyForm'));
-	thisform.submit();
 }
 
 </script>

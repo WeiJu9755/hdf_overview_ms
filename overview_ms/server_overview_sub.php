@@ -4,7 +4,7 @@
 	@include_once '/website/include/pub_function.php';
 
 	$site_db = $_GET['site_db'];
-	$case_id = $_GET['case_id'];
+	$case_id = addslashes($_GET['case_id']);
 	
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * Easy set variables 詮能
@@ -124,7 +124,9 @@
 	
 	 
 	$sQuery = "
-		SELECT SQL_CALC_FOUND_ROWS ".str_replace(" , ", " ", implode(", ", $aColumns))."
+		SELECT SQL_CALC_FOUND_ROWS ".str_replace(" , ", " ", implode(", ", $aColumns)).",
+			(SELECT GROUP_CONCAT(DISTINCT ob.building ORDER BY ob.building SEPARATOR '、') FROM overview_building ob
+				WHERE ob.case_id = a.case_id AND ob.builder_id = a.builder_id AND ob.sync_status <> '已取消勾選') AS responsible_buildings
 		FROM   $sTable a
 		$sWhere
 		$sOrder
@@ -185,6 +187,8 @@
 
 			}
 		}
+		//負責棟別（index 22）
+		$row[] = $aRow['responsible_buildings'];
 		$output['aaData'][] = $row;
 	}
 	
